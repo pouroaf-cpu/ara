@@ -24,7 +24,7 @@ function formatNotes(raw: string): { text: string; ts: string }[] {
     .filter(Boolean)
     .reverse()
     .map(e => {
-      const match = e.match(/^\[(.+?)\]\s*(.*)$/s)
+      const match = e.match(/^\[([\s\S]+?)\]\s*([\s\S]*)$/)
       if (match) return { ts: match[1], text: match[2].trim() }
       return { ts: '', text: e }
     })
