@@ -204,6 +204,38 @@ export default function ContactPage() {
             </div>
           </div>
 
+          {/* Call buttons — right under name */}
+          {dialNumber && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <a
+                href={`tel:${dialNumber.replace(/\s/g, '')}`}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '11px 16px', borderRadius: 8,
+                  background: '#16a34a', color: '#fff',
+                  textDecoration: 'none', fontSize: 14, fontWeight: 500,
+                }}
+              >
+                <span style={{ fontSize: 16 }}>📞</span>
+                Call now — {dialNumber}
+              </a>
+              {contact.mobile && contact.phone && (
+                <a
+                  href={`tel:${contact.phone.replace(/\s/g, '')}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '9px 16px', borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'transparent', color: 'var(--muted)',
+                    textDecoration: 'none', fontSize: 13,
+                  }}
+                >
+                  Alt: {contact.phone}
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Stage badge */}
           <div>
             <div style={sectionLabel}>Status</div>
@@ -237,40 +269,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Call button */}
-          {dialNumber && (
-            <div>
-              <div style={sectionLabel}>Call</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <a
-                  href={`tel:${dialNumber.replace(/\s/g, '')}`}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '11px 16px', borderRadius: 8,
-                    background: '#16a34a', color: '#fff',
-                    textDecoration: 'none', fontSize: 14, fontWeight: 500,
-                  }}
-                >
-                  <span style={{ fontSize: 16 }}>📞</span>
-                  Call now — {dialNumber}
-                </a>
-                {contact.mobile && contact.phone && (
-                  <a
-                    href={`tel:${contact.phone.replace(/\s/g, '')}`}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '9px 16px', borderRadius: 8,
-                      border: '1px solid var(--border)',
-                      background: 'transparent', color: 'var(--muted)',
-                      textDecoration: 'none', fontSize: 13,
-                    }}
-                  >
-                    Alt: {contact.phone}
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
+
 
           {/* Call history */}
           {notes.length > 0 && (
@@ -303,10 +302,26 @@ export default function ContactPage() {
           gap: 20,
         }}>
 
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Log this call</div>
-            <div style={{ fontSize: 14, color: 'var(--muted)' }}>
-              {contact.name} · {new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Log this call</div>
+              <div style={{ fontSize: 14, color: 'var(--muted)' }}>
+                {contact.name} · {new Date().toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button className="btn-ghost" onClick={saveOnly} disabled={saving} style={{ fontSize: 13 }}>
+                Save only
+              </button>
+              {queue.length > 0 && nextInQueue ? (
+                <button className="btn-primary" onClick={saveAndNext} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save & next →'}
+                </button>
+              ) : (
+                <button className="btn-primary" onClick={saveOnly} disabled={saving}>
+                  {saving ? 'Saving...' : 'Save & close'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -363,24 +378,7 @@ export default function ContactPage() {
             />
           </div>
 
-          {/* Actions */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Changes save to your call log</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-ghost" onClick={saveOnly} disabled={saving} style={{ fontSize: 13 }}>
-                Save only
-              </button>
-              {queue.length > 0 && nextInQueue ? (
-                <button className="btn-primary" onClick={saveAndNext} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save & next →'}
-                </button>
-              ) : (
-                <button className="btn-primary" onClick={saveOnly} disabled={saving}>
-                  {saving ? 'Saving...' : 'Save & close'}
-                </button>
-              )}
-            </div>
-          </div>
+
         </div>
       </div>
 
