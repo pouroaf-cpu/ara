@@ -34,7 +34,6 @@ function initials(name: string) {
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
 }
 
-// Handles legacy 'Cold' values from the sheet
 function normaliseStage(s: string) {
   if (!s || s === 'Cold') return 'Uncalled'
   return s
@@ -76,6 +75,7 @@ export default function ContactPage() {
 
   useEffect(() => { fetchContact() }, [fetchContact])
 
+  // Save queue progress to localStorage
   useEffect(() => {
     if (queueParam && queue.length > 0) {
       localStorage.setItem('tf_queue', queueParam)
@@ -106,6 +106,7 @@ export default function ContactPage() {
     if (nextInQueue) {
       router.push(`/contact/${nextInQueue}?queue=${queueParam}`)
     } else {
+      // Queue done — clear saved state
       localStorage.removeItem('tf_queue')
       localStorage.removeItem('tf_queue_current')
       router.push('/dashboard')
@@ -143,8 +144,16 @@ export default function ContactPage() {
 
   if (!contact) return null
 
-  const primaryNumber = contact.mobile || contact.phone
-  const altNumber = contact.mobile && contact.phone ? contact.phone : null
+  // Pick the best available number — mobile first, then phone. Only show one button.
+  const primaryNumber = (contact.mobile?.trim() && contact.mobile.trim() !== '0' && contact.mobile.trim() !== '')
+    ? contact.mobile.trim()
+    : contact.phone?.trim() || null
+
+  // Alt number — only if both exist and are different
+  const altNumber = (contact.mobile?.trim() && contact.phone?.trim() && contact.mobile.trim() !== contact.phone.trim())
+    ? contact.phone.trim()
+    : null
+
   const notes = formatNotes(contact.notes)
   const displayStage = normaliseStage(contact.pipelineStage)
   const stageStyle = STAGE_COLORS[displayStage] || { bg: '#E2E8F0', color: '#475569' }
@@ -221,16 +230,17 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Call buttons */}
+          {/* Call button(s) — only real numbers */}
           {primaryNumber && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <a
                 href={`tel:${primaryNumber.replace(/\s/g, '')}`}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                  padding: '11px 16px', borderRadius: 8,
+                  padding: '12px 16px', borderRadius: 8,
                   background: '#16a34a', color: '#fff',
-                  textDecoration: 'none', fontSize: 14, fontWeight: 600,
+                  textDecoration: 'none', fontSize: 15, fontWeight: 700,
+                  letterSpacing: '0.02em',
                 }}
               >
                 <span style={{ fontSize: 16 }}>📞</span>
@@ -272,8 +282,8 @@ export default function ContactPage() {
             <div style={sectionLabel}>Contact</div>
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               {[
-                ['Mobile', contact.mobile || 'No mobile'],
-                ['Phone', contact.phone || '—'],
+                ['Mobile', contact.mobile?.trim() || '—'],
+                ['Phone', contact.phone?.trim() || '—'],
                 ['Region', contact.region || '—'],
                 ['Decision maker', contact.decisionMaker || '—'],
                 ['Attempts', contact.attempts && contact.attempts !== '0' ? contact.attempts : '0'],
@@ -287,29 +297,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Profile notes */}
-          <div>
-            <div style={sectionLabel}>Profile notes</div>
-            <textarea
-              value={contact.notes || ''}
-              readOnly
-              rows={4}
-              placeholder="No profile notes yet — add from the call log panel."
-              style={{
-                resize: 'vertical',
-                width: '100%',
-                fontSize: 12,
-                color: 'var(--muted)',
-                background: 'var(--bg)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                padding: '8px 10px',
-                lineHeight: 1.5,
-              }}
-            />
-          </div>
-
-          {/* Call history */}
+          {/* Call history — no profile notes textarea */}
           {notes.length > 0 && (
             <div>
               <div style={sectionLabel}>Call history</div>

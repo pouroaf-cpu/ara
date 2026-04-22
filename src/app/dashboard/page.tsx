@@ -15,7 +15,6 @@ const STAGE_COLORS: Record<string, string> = {
   'Not Interested': '#ef4444',
 }
 
-// Handles legacy 'Cold' values from the sheet
 function normaliseStage(s: string) {
   if (!s || s === 'Cold') return 'Uncalled'
   return s
@@ -41,6 +40,7 @@ export default function Dashboard() {
 
   useEffect(() => { fetchContacts() }, [fetchContacts])
 
+  // Check for an in-progress queue on mount
   useEffect(() => {
     const q = localStorage.getItem('tf_queue')
     const c = localStorage.getItem('tf_queue_current')
@@ -69,7 +69,14 @@ export default function Dashboard() {
     })
     const queue = sorted.slice(0, queueSize)
     const ids = queue.map(c => c.rowIndex).join(',')
-    router.push(`/contact/${queue[0].rowIndex}?queue=${ids}`)
+    const firstId = queue[0].rowIndex
+
+    // Overwrite any saved queue with the new one
+    localStorage.setItem('tf_queue', ids)
+    localStorage.setItem('tf_queue_current', String(firstId))
+    setSavedQueue(null)
+
+    router.push(`/contact/${firstId}?queue=${ids}`)
   }
 
   function resumeQueue() {
@@ -115,7 +122,7 @@ export default function Dashboard() {
 
       <div style={{ padding: '1.25rem' }}>
 
-        {/* Resume Queue banner */}
+        {/* Resume Queue banner — only shows if there's a saved queue */}
         {savedQueue && (
           <div style={{
             background: '#1a2e1a',
