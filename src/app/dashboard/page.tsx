@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [stageFilter, setStageFilter] = useState('All')
   const [regionFilter, setRegionFilter] = useState('All')
   const [queueSize, setQueueSize] = useState(10)
+  const [savedQueue, setSavedQueue] = useState<{ queue: string; current: string } | null>(null)
   const router = useRouter()
 
   const fetchContacts = useCallback(async () => {
@@ -33,6 +34,13 @@ export default function Dashboard() {
   }, [router])
 
   useEffect(() => { fetchContacts() }, [fetchContacts])
+
+  // Check for saved queue on mount
+  useEffect(() => {
+    const q = localStorage.getItem('tf_queue')
+    const c = localStorage.getItem('tf_queue_current')
+    if (q && c) setSavedQueue({ queue: q, current: c })
+  }, [])
 
   const regions = ['All', ...Array.from(new Set(contacts.map(c => c.region).filter(Boolean)))]
 
@@ -56,6 +64,17 @@ export default function Dashboard() {
     const queue = sorted.slice(0, queueSize)
     const ids = queue.map(c => c.rowIndex).join(',')
     router.push(`/contact/${queue[0].rowIndex}?queue=${ids}`)
+  }
+
+  function resumeQueue() {
+    if (!savedQueue) return
+    router.push(`/contact/${savedQueue.current}?queue=${savedQueue.queue}`)
+  }
+
+  function clearQueue() {
+    localStorage.removeItem('tf_queue')
+    localStorage.removeItem('tf_queue_current')
+    setSavedQueue(null)
   }
 
   async function logout() {
@@ -89,6 +108,42 @@ export default function Dashboard() {
       </div>
 
       <div style={{ padding: '1.25rem' }}>
+
+        {/* Resume Queue banner */}
+        {savedQueue && (
+          <div style={{
+            background: '#1a2e1a',
+            border: '1px solid #16a34a',
+            borderRadius: 'var(--radius)',
+            padding: '12px 16px',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: 16 }}>⏸️</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80' }}>Queue in progress</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>You left a call queue — pick up where you left off</div>
+            </div>
+            <button
+              className="btn-primary"
+              onClick={resumeQueue}
+              style={{ fontSize: 13, padding: '7px 16px' }}
+            >
+              ▶ Resume Queue
+            </button>
+            <button
+              className="btn-ghost"
+              onClick={clearQueue}
+              style={{ fontSize: 12, padding: '7px 12px', color: 'var(--muted)' }}
+            >
+              Discard
+            </button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
           {STAGES.slice(1).map(s => (
             <button

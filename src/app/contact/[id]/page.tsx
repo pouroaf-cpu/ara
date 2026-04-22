@@ -70,6 +70,14 @@ export default function ContactPage() {
 
   useEffect(() => { fetchContact() }, [fetchContact])
 
+  // Save queue to localStorage so dashboard can offer Resume Queue
+  useEffect(() => {
+    if (queueParam && queue.length > 0) {
+      localStorage.setItem('tf_queue', queueParam)
+      localStorage.setItem('tf_queue_current', String(rowIndex))
+    }
+  }, [queueParam, rowIndex])
+
   async function saveAndNext() {
     if (!contact) return
     setSaving(true)
@@ -93,6 +101,9 @@ export default function ContactPage() {
     if (nextInQueue) {
       router.push(`/contact/${nextInQueue}?queue=${queueParam}`)
     } else {
+      // Queue finished — clear saved queue
+      localStorage.removeItem('tf_queue')
+      localStorage.removeItem('tf_queue_current')
       router.push('/dashboard')
     }
   }
@@ -128,7 +139,8 @@ export default function ContactPage() {
 
   if (!contact) return null
 
-  const dialNumber = contact.mobile || contact.phone
+  const primaryNumber = contact.mobile || contact.phone
+  const altNumber = contact.mobile && contact.phone ? contact.phone : null
   const notes = formatNotes(contact.notes)
   const stageStyle = STAGE_COLORS[contact.pipelineStage] || { bg: '#E2E8F0', color: '#475569' }
 
@@ -204,33 +216,34 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Call buttons — right under name */}
-          {dialNumber && (
+          {/* Call buttons — number inside the green button */}
+          {primaryNumber && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <a
-                href={`tel:${dialNumber.replace(/\s/g, '')}`}
+                href={`tel:${primaryNumber.replace(/\s/g, '')}`}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                   padding: '11px 16px', borderRadius: 8,
                   background: '#16a34a', color: '#fff',
-                  textDecoration: 'none', fontSize: 14, fontWeight: 500,
+                  textDecoration: 'none', fontSize: 14, fontWeight: 600,
                 }}
               >
                 <span style={{ fontSize: 16 }}>📞</span>
-                Call now — {dialNumber}
+                {primaryNumber}
               </a>
-              {contact.mobile && contact.phone && (
+              {altNumber && (
                 <a
-                  href={`tel:${contact.phone.replace(/\s/g, '')}`}
+                  href={`tel:${altNumber.replace(/\s/g, '')}`}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '9px 16px', borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    background: 'transparent', color: 'var(--muted)',
-                    textDecoration: 'none', fontSize: 13,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                    padding: '11px 16px', borderRadius: 8,
+                    background: '#15803d', color: '#fff',
+                    textDecoration: 'none', fontSize: 13, fontWeight: 500,
+                    opacity: 0.85,
                   }}
                 >
-                  Alt: {contact.phone}
+                  <span style={{ fontSize: 14 }}>📞</span>
+                  {altNumber}
                 </a>
               )}
             </div>
@@ -269,7 +282,27 @@ export default function ContactPage() {
             </div>
           </div>
 
-
+          {/* Profile notes */}
+          <div>
+            <div style={sectionLabel}>Profile notes</div>
+            <textarea
+              value={contact.notes || ''}
+              readOnly
+              rows={4}
+              placeholder="No profile notes yet — add from the call log panel."
+              style={{
+                resize: 'vertical',
+                width: '100%',
+                fontSize: 12,
+                color: 'var(--muted)',
+                background: 'var(--bg)',
+                border: '1px solid var(--border)',
+                borderRadius: 6,
+                padding: '8px 10px',
+                lineHeight: 1.5,
+              }}
+            />
+          </div>
 
           {/* Call history */}
           {notes.length > 0 && (
@@ -378,11 +411,10 @@ export default function ContactPage() {
             />
           </div>
 
-
         </div>
       </div>
 
-      {/* Mobile fallback — stack vertically under 768px */}
+      {/* Mobile fallback */}
       <style>{`
         @media (max-width: 768px) {
           div[style*="gridTemplateColumns: 300px"] {
