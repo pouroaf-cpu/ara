@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import type { Contact } from '@/lib/sheets'
 
-const STAGES = ['Cold', 'Contacted', 'Interested', 'Follow-up Booked', 'Closed', 'Not Interested']
+const STAGES = ['Uncalled', 'Contacted', 'Interested', 'Follow-up Booked', 'Closed', 'Not Interested']
 const OUTCOMES = ['No Answer', 'Left Voicemail', 'Not Interested', 'Call Back', 'Interested', 'Closed']
 
 const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
-  'Cold':              { bg: '#E2E8F0', color: '#475569' },
+  'Uncalled':          { bg: '#E2E8F0', color: '#475569' },
   'Contacted':         { bg: '#DBEAFE', color: '#1D4ED8' },
   'Interested':        { bg: '#FEF3C7', color: '#92400E' },
   'Follow-up Booked':  { bg: '#EDE9FE', color: '#5B21B6' },
@@ -32,6 +32,12 @@ function formatNotes(raw: string): { text: string; ts: string }[] {
 
 function initials(name: string) {
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
+}
+
+// Handles legacy 'Cold' values from the sheet
+function normaliseStage(s: string) {
+  if (!s || s === 'Cold') return 'Uncalled'
+  return s
 }
 
 export default function ContactPage() {
@@ -62,7 +68,7 @@ export default function ContactPage() {
     const found = data.contacts?.find((c: Contact) => c.rowIndex === rowIndex)
     if (!found) { router.push('/dashboard'); return }
     setContact(found)
-    setStage(found.pipelineStage || 'Cold')
+    setStage(normaliseStage(found.pipelineStage))
     setOutcome(found.callOutcome || '')
     setNextActionDate(found.nextActionDate || '')
     setLoading(false)
@@ -70,7 +76,6 @@ export default function ContactPage() {
 
   useEffect(() => { fetchContact() }, [fetchContact])
 
-  // Save queue to localStorage so dashboard can offer Resume Queue
   useEffect(() => {
     if (queueParam && queue.length > 0) {
       localStorage.setItem('tf_queue', queueParam)
@@ -101,7 +106,6 @@ export default function ContactPage() {
     if (nextInQueue) {
       router.push(`/contact/${nextInQueue}?queue=${queueParam}`)
     } else {
-      // Queue finished — clear saved queue
       localStorage.removeItem('tf_queue')
       localStorage.removeItem('tf_queue_current')
       router.push('/dashboard')
@@ -142,7 +146,8 @@ export default function ContactPage() {
   const primaryNumber = contact.mobile || contact.phone
   const altNumber = contact.mobile && contact.phone ? contact.phone : null
   const notes = formatNotes(contact.notes)
-  const stageStyle = STAGE_COLORS[contact.pipelineStage] || { bg: '#E2E8F0', color: '#475569' }
+  const displayStage = normaliseStage(contact.pipelineStage)
+  const stageStyle = STAGE_COLORS[displayStage] || { bg: '#E2E8F0', color: '#475569' }
 
   return (
     <div style={{ display: 'grid', gridTemplateRows: 'auto 1fr', minHeight: '100vh', background: 'var(--bg)' }}>
@@ -216,7 +221,7 @@ export default function ContactPage() {
             </div>
           </div>
 
-          {/* Call buttons — number inside the green button */}
+          {/* Call buttons */}
           {primaryNumber && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <a
@@ -258,7 +263,7 @@ export default function ContactPage() {
               padding: '4px 12px', borderRadius: 20,
               background: stageStyle.bg, color: stageStyle.color,
             }}>
-              {contact.pipelineStage || 'Cold'}
+              {displayStage}
             </span>
           </div>
 

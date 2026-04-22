@@ -4,15 +4,21 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Contact } from '@/lib/sheets'
 
-const STAGES = ['All', 'Cold', 'Contacted', 'Interested', 'Follow-up Booked', 'Closed', 'Not Interested']
+const STAGES = ['All', 'Uncalled', 'Contacted', 'Interested', 'Follow-up Booked', 'Closed', 'Not Interested']
 
 const STAGE_COLORS: Record<string, string> = {
-  'Cold': '#64748b',
+  'Uncalled': '#64748b',
   'Contacted': '#3b82f6',
   'Interested': '#f59e0b',
   'Follow-up Booked': '#8b5cf6',
   'Closed': '#22c55e',
   'Not Interested': '#ef4444',
+}
+
+// Handles legacy 'Cold' values from the sheet
+function normaliseStage(s: string) {
+  if (!s || s === 'Cold') return 'Uncalled'
+  return s
 }
 
 export default function Dashboard() {
@@ -35,7 +41,6 @@ export default function Dashboard() {
 
   useEffect(() => { fetchContacts() }, [fetchContacts])
 
-  // Check for saved queue on mount
   useEffect(() => {
     const q = localStorage.getItem('tf_queue')
     const c = localStorage.getItem('tf_queue_current')
@@ -45,20 +50,21 @@ export default function Dashboard() {
   const regions = ['All', ...Array.from(new Set(contacts.map(c => c.region).filter(Boolean)))]
 
   const filtered = contacts.filter(c => {
+    const normStage = normaliseStage(c.pipelineStage)
     const matchSearch = !search ||
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.tradeType.toLowerCase().includes(search.toLowerCase()) ||
       (c.phone + c.mobile).includes(search)
-    const matchStage = stageFilter === 'All' || c.pipelineStage === stageFilter
+    const matchStage = stageFilter === 'All' || normStage === stageFilter
     const matchRegion = regionFilter === 'All' || c.region === regionFilter
     return matchSearch && matchStage && matchRegion
   })
 
   function buildQueue() {
-    const priority = ['Interested', 'Follow-up Booked', 'Contacted', 'Cold']
+    const priority = ['Interested', 'Follow-up Booked', 'Contacted', 'Uncalled']
     const sorted = [...filtered].sort((a, b) => {
-      const ai = priority.indexOf(a.pipelineStage)
-      const bi = priority.indexOf(b.pipelineStage)
+      const ai = priority.indexOf(normaliseStage(a.pipelineStage))
+      const bi = priority.indexOf(normaliseStage(b.pipelineStage))
       return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
     })
     const queue = sorted.slice(0, queueSize)
@@ -83,7 +89,7 @@ export default function Dashboard() {
   }
 
   const stageCounts = STAGES.slice(1).reduce((acc, s) => {
-    acc[s] = contacts.filter(c => c.pipelineStage === s).length
+    acc[s] = contacts.filter(c => normaliseStage(c.pipelineStage) === s).length
     return acc
   }, {} as Record<string, number>)
 
@@ -127,18 +133,10 @@ export default function Dashboard() {
               <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80' }}>Queue in progress</div>
               <div style={{ fontSize: 12, color: 'var(--muted)' }}>You left a call queue — pick up where you left off</div>
             </div>
-            <button
-              className="btn-primary"
-              onClick={resumeQueue}
-              style={{ fontSize: 13, padding: '7px 16px' }}
-            >
+            <button className="btn-primary" onClick={resumeQueue} style={{ fontSize: 13, padding: '7px 16px' }}>
               ▶ Resume Queue
             </button>
-            <button
-              className="btn-ghost"
-              onClick={clearQueue}
-              style={{ fontSize: 12, padding: '7px 12px', color: 'var(--muted)' }}
-            >
+            <button className="btn-ghost" onClick={clearQueue} style={{ fontSize: 12, padding: '7px 12px', color: 'var(--muted)' }}>
               Discard
             </button>
           </div>
@@ -151,7 +149,7 @@ export default function Dashboard() {
               onClick={() => setStageFilter(stageFilter === s ? 'All' : s)}
               style={{
                 background: stageFilter === s ? STAGE_COLORS[s] : 'var(--surface)',
-                color: stageFilter === s ? '#000' : 'var(--muted)',
+                color: stageFilter === s ? '#fff' : 'var(--muted)',
                 border: `1px solid ${stageFilter === s ? STAGE_COLORS[s] : 'var(--border)'}`,
                 borderRadius: 20,
                 padding: '4px 12px',
@@ -213,52 +211,55 @@ export default function Dashboard() {
           <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '3rem' }}>Loading contacts...</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {filtered.map(c => (
-              <div
-                key={c.rowIndex}
-                onClick={() => router.push(`/contact/${c.rowIndex}`)}
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 'var(--radius)',
-                  padding: '0.85rem 1.1rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  transition: 'border-color 0.15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = '#444')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 2 }}>{c.name || '(no name)'}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {c.tradeType && <span>{c.tradeType}</span>}
-                    {c.region && <span>{c.region}</span>}
-                    {c.phone && <span>{c.phone}</span>}
-                    {c.attempts && c.attempts !== '0' && <span>{c.attempts} attempts</span>}
+            {filtered.map(c => {
+              const normStage = normaliseStage(c.pipelineStage)
+              return (
+                <div
+                  key={c.rowIndex}
+                  onClick={() => router.push(`/contact/${c.rowIndex}`)}
+                  style={{
+                    background: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                    padding: '0.85rem 1.1rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    transition: 'border-color 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#444')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, fontSize: 14, marginBottom: 2 }}>{c.name || '(no name)'}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {c.tradeType && <span>{c.tradeType}</span>}
+                      {c.region && <span>{c.region}</span>}
+                      {c.phone && <span>{c.phone}</span>}
+                      {c.attempts && c.attempts !== '0' && <span>{c.attempts} attempts</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                    {c.nextActionDate && (
+                      <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>
+                        📅 {c.nextActionDate}
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      padding: '3px 9px',
+                      borderRadius: 20,
+                      background: STAGE_COLORS[normStage] || '#333',
+                      color: '#fff',
+                    }}>
+                      {normStage}
+                    </span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                  {c.nextActionDate && (
-                    <span style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 500 }}>
-                      📅 {c.nextActionDate}
-                    </span>
-                  )}
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '3px 9px',
-                    borderRadius: 20,
-                    background: STAGE_COLORS[c.pipelineStage] || '#333',
-                    color: ['Cold', 'Contacted'].includes(c.pipelineStage) ? '#fff' : '#000',
-                  }}>
-                    {c.pipelineStage || 'Cold'}
-                  </span>
-                </div>
-              </div>
-            ))}
+              )
+            })}
             {filtered.length === 0 && (
               <div style={{ color: 'var(--muted)', textAlign: 'center', padding: '3rem' }}>
                 No contacts match your filters
