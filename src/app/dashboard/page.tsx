@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { Contact } from '@/lib/sheets'
 
 const STAGES = ['All', 'Uncalled', 'Contacted', 'Interested', 'Follow-up Booked', 'Closed', 'Not Interested']
@@ -113,9 +114,21 @@ export default function Dashboard() {
         top: 0,
         zIndex: 10,
       }}>
-        <div>
-          <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 14, letterSpacing: '0.06em' }}>TRADESFLOW</span>
-          <span style={{ color: 'var(--muted)', fontSize: 13, marginLeft: 10 }}>Sales CRM</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div>
+            <span style={{ color: 'var(--accent)', fontWeight: 700, fontSize: 14, letterSpacing: '0.06em' }}>ARA</span>
+            <span style={{ color: 'var(--muted)', fontSize: 13, marginLeft: 8 }}>Webapp</span>
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <Link href="/dashboard" style={{
+              fontSize: 13, fontWeight: 600, padding: '5px 12px', borderRadius: 6,
+              background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)',
+            }}>Cold Calls</Link>
+            <Link href="/invoices" style={{
+              fontSize: 13, fontWeight: 500, padding: '5px 12px', borderRadius: 6,
+              background: 'transparent', color: 'var(--muted)', border: '1px solid var(--border)',
+            }}>Invoices</Link>
+          </div>
         </div>
         <button className="btn-ghost" onClick={logout} style={{ padding: '6px 12px', fontSize: 12 }}>Log out</button>
       </div>

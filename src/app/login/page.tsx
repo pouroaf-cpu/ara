@@ -44,9 +44,9 @@ export default function LoginPage() {
       }}>
         <div style={{ marginBottom: '1.75rem' }}>
           <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-            Tradesflow
+            Ara
           </div>
-          <h1 style={{ fontSize: 22, fontWeight: 600 }}>Sales CRM</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 600 }}>Webapp</h1>
           <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 4 }}>Enter your password to continue</p>
         </div>
 

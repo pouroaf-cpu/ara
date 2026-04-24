@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Tradesflow CRM',
-  description: 'Outbound sales pipeline',
+  title: 'Ara',
+  description: 'Ara Webapp',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
