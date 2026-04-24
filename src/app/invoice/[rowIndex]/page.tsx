@@ -5,7 +5,7 @@ import { useRouter, useParams, useSearchParams } from 'next/navigation'
 import type { InvoiceRow } from '@/lib/invoiceSheets'
 
 function formatCurrency(val: string): string {
-  const n = parseFloat(val)
+  const n = parseFloat(val.replace(/[$,]/g, ''))
   if (isNaN(n)) return '—'
   return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
