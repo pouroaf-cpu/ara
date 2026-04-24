@@ -1,7 +1,7 @@
 import { google } from 'googleapis'
 
 const SHEET_ID = process.env.INVOICE_SHEET_ID!
-const SHEET_TAB = 'Sheet1'
+const SHEET_TAB = 'Call Queue'
 
 function getAuth() {
   return new google.auth.GoogleAuth({
