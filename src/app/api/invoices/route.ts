@@ -10,7 +10,8 @@ export async function GET(req: NextRequest) {
     const invoices = await getUnpaidInvoices()
     return NextResponse.json({ invoices })
   } catch (err) {
-    console.error('Invoice fetch error:', err)
-    return NextResponse.json({ error: 'Failed to load invoices' }, { status: 500 })
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Invoice fetch error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
